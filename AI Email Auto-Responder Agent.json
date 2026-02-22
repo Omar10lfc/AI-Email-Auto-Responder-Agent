@@ -1,0 +1,416 @@
+{
+  "name": "AI Email Auto-Responder Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {
+          "labelIds": [
+            "INBOX"
+          ],
+          "q": "subject:Demo",
+          "readStatus": "unread"
+        }
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "02097280-a82c-43f8-a96b-251f20e93f07",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "3f5b7AVdRvJtMUxN",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "478960e6-f86d-4229-97d9-64cdbb413dc6",
+              "leftValue": "={{ $json.urgency }}",
+              "rightValue": "High",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        624,
+        0
+      ],
+      "id": "c8c6cd27-8638-4103-93f7-f2aa844baf0a",
+      "name": "Urgency Check"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Extract the stringified JSON from Groq's response\nconst rawContent = $input.item.json.choices[0].message.content;\n\ntry {\n  // 2. Convert string to an actual usable JSON object\n  const parsedData = JSON.parse(rawContent);\n  \n  // 3. Output the clean data\n  return [{ json: parsedData }];\n\n} catch (error) {\n  // FALLBACK: If the LLM ever hallucinates non-JSON, don't crash the system.\n  return [{\n    json: {\n      category: \"General\",\n      urgency: \"Low\",\n      short_summary: \"Parsing failed\",\n      response: \"Thank you for reaching out. We have received your message and will review it shortly.\"\n    }\n  }];\n}"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "56b184f1-52f7-4ec9-82d3-9e4ebb63a079",
+      "name": "Parse & Validate JSON"
+    },
+    {
+      "parameters": {
+        "sendTo": "omarmashaly86@gmail.com",
+        "subject": "=URGENT: {{$json.category}} email from {{ $('Gmail Trigger').item.json.From }}",
+        "emailType": "text",
+        "message": "=The AI Agent flagged a High Urgency email.\n\nSummary: {{$json.short_summary}}\n\nOriginal Subject: {{ $('Gmail Trigger').item.json.Subject }}\n\nSuggested AI Response (Not Sent):\n{{$json.response}}\n\nPlease review your inbox immediately.",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        832,
+        -96
+      ],
+      "id": "6a94af46-bca9-43e8-a623-6b7eef224c4f",
+      "name": "Alert Admin (High Priority)",
+      "webhookId": "0d24c42e-3634-4f57-8f24-ee2807c2048c",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "3f5b7AVdRvJtMUxN",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1hVRaDFMBhWhKQW0X1uJrK889t-zBFqWTePWDtV8-nDA",
+          "mode": "list",
+          "cachedResultName": "E-mail-Logs",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hVRaDFMBhWhKQW0X1uJrK889t-zBFqWTePWDtV8-nDA/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1hVRaDFMBhWhKQW0X1uJrK889t-zBFqWTePWDtV8-nDA/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Date": "={{ $now }}",
+            "Sender": "={{ $('Gmail Trigger').item.json.From }}",
+            "Subject": "={{ $('Gmail Trigger').item.json.Subject }}",
+            "Category": "={{ $json.category }}",
+            "Urgency": "={{ $json.urgency }}",
+            "Summary": "={{ $json.short_summary }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Date",
+              "displayName": "Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Sender",
+              "displayName": "Sender",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Subject",
+              "displayName": "Subject",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Category",
+              "displayName": "Category",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Urgency",
+              "displayName": "Urgency",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Summary",
+              "displayName": "Summary",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        832,
+        96
+      ],
+      "id": "28b75eab-7ea5-4518-b03f-d06d026a633a",
+      "name": "Log to Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "863uzyUpVqmGTN8Q",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Gmail Trigger').item.json.From }}",
+        "subject": "=Re: {{ $('Gmail Trigger').item.json.Subject }}",
+        "emailType": "text",
+        "message": "={{ $('Parse & Validate JSON').item.json.response }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1040,
+        96
+      ],
+      "id": "957b583d-04e1-4c5d-85da-8de718ae33ef",
+      "name": "Send Auto-Reply",
+      "webhookId": "8dfbbb65-5696-43bc-9e0f-067001f58687",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "3f5b7AVdRvJtMUxN",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer YOUR_GROQ_API_KEY_HERE"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"llama-3.3-70b-versatile\",\n  \"messages\": [\n    {\n      \"role\": \"system\",\n      \"content\": \"You are an AI email assistant for a technology company.\\n\\nYour job:\\n1. Classify the email into one of: \\\"Support\\\", \\\"Sales\\\", \\\"General\\\"\\n2. Assign urgency level: \\\"Low\\\", \\\"Medium\\\", or \\\"High\\\"\\n3. Generate a short 1-sentence summary\\n4. Generate a professional email reply\\n\\nRules:\\n- Be concise and professional.\\n- If unclear, classify as \\\"General\\\".\\n- Never fabricate details.\\n- Keep response under 150 words.\\n\\nRespond ONLY in valid JSON using this exact format:\\n\\n{\\n  \\\"category\\\": \\\"Support | Sales | General\\\",\\n  \\\"urgency\\\": \\\"Low | Medium | High\\\",\\n  \\\"short_summary\\\": \\\"One sentence summary\\\",\\n  \\\"response\\\": \\\"Professional email reply\\\"\\n}\\n\\nRespond ONLY with valid JSON. No explanations. No markdown.\"\n    },\n    {\n      \"role\": \"user\",\n      \"content\": \"Email Subject: {{$json.Subject}}\\n\\nEmail Body:\\n{{$json.snippet}}\"\n    }\n  ],\n  \"temperature\": 0.2\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "e079a338-5745-4aad-aaeb-07ea22a6a0e8",
+      "name": "LLM Intention Analysis",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "content": "## AI Decision Engine\nGroq API (Llama-3) analyzes email intent & strict JSON parsing validates the output.\n",
+        "height": 288,
+        "width": 416,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        128,
+        -112
+      ],
+      "typeVersion": 1,
+      "id": "1b33ced1-c03b-4260-baca-d82424650661",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Intelligent Routing\nForks execution based on AI-assigned urgency score.",
+        "height": 288,
+        "width": 256,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        544,
+        -112
+      ],
+      "typeVersion": 1,
+      "id": "41813916-99b8-491f-8f99-c45de88c2f06",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "content": "## Execution & Observability\nLogs interaction for auditing and dispatches contextual auto-reply.",
+        "height": 464,
+        "width": 432,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        800,
+        -208
+      ],
+      "typeVersion": 1,
+      "id": "79976502-e9f6-4877-9209-611373a145d2",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "content": "## AI Email Auto-Responder Agent\n",
+        "height": 80,
+        "width": 384,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        400,
+        -304
+      ],
+      "typeVersion": 1,
+      "id": "bb8505a1-e609-4130-a898-095e4fdea30b",
+      "name": "Sticky Note3"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "LLM Intention Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Urgency Check": {
+      "main": [
+        [
+          {
+            "node": "Alert Admin (High Priority)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log to Google Sheets",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse & Validate JSON": {
+      "main": [
+        [
+          {
+            "node": "Urgency Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log to Google Sheets": {
+      "main": [
+        [
+          {
+            "node": "Send Auto-Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "LLM Intention Analysis": {
+      "main": [
+        [
+          {
+            "node": "Parse & Validate JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "timezone": "Africa/Cairo",
+    "callerPolicy": "workflowsFromSameOwner",
+    "executionTimeout": -1
+  },
+  "versionId": "39559f7a-eb87-44f9-8853-4f088cfa11dc",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "61f1625c21a66a0c46dd7c2f7d2abf426e06d80fc4fb9f55091c2f50a92a7d69"
+  },
+  "id": "tr_N9K8lqmm4togKn374x",
+  "tags": []
+}
