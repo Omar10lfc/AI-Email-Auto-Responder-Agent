@@ -2,11 +2,11 @@
 
 An event-driven, autonomous AI agent that monitors inbound emails, classifies user intent, assigns urgency scores, and executes conditional routing. Built to demonstrate production-grade LLM orchestration, strict data validation, and automated observability.
 
-## 📸 System Architecture
+## System Architecture
 
-*(Note: Upload your final screenshot to your GitHub repo and name it `workflow-architecture.png` so it displays here).*
+![workflow-architecture](workflow-architecture.png)
 
-## 🧠 Core Pipeline & Logic
+## Core Pipeline & Logic
 
 The workflow is divided into three distinct operational phases:
 
@@ -27,14 +27,14 @@ The workflow is divided into three distinct operational phases:
 * **Audit Logging:** Integrates with the **Google Sheets API** to append a real-time record of every processed email, including the timestamp, sender, assigned category, urgency score, and a generated 1-sentence summary.
 * **Automated Dispatch:** Utilizes the **Gmail API** to send the white-labeled, AI-generated professional response back to the original sender.
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 * **Orchestration:** n8n (Self-Hosted)
 * **LLM / Inference:** Meta Llama 3.3 70B via Groq API (Low-latency processing)
 * **Integrations:** Gmail API, Google Sheets API
 * **Data Processing:** JavaScript, JSON
 
-## ⚙️ How to Deploy Locally
+## How to Deploy Locally
 
 1. Clone this repository.
 2. Open your local n8n instance and click **Import from File**.
